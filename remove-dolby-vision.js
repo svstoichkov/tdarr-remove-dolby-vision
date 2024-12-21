@@ -65,19 +65,25 @@ async function plugin(file, librarySettings, inputs, otherArguments) {
     throw new Error(`dovi_tool failed: ${dovi.stderr}`);
   }
 
-  // Remux
+  // Remux with mkvmerge
   response.infoLog += "Remuxing with original streams...\n";
   const mkvmerge = spawn("mkvmerge", ["-o", outputPath, procHevc, "--no-video", file.file]);
   if (mkvmerge.error || mkvmerge.status !== 0) {
     throw new Error(`mkvmerge failed: ${mkvmerge.stderr}`);
   }
 
-  // If everything succeeded
+  // Add FFmpeg command
+  response.FFmpegMode = true;
   response.processFile = true;
-  response.FFmpegMode = false;
-  response.file = outputPath;
-  response.removeFromDB = true;
-  response.updateDB = true;
+  response.cli = [
+    "-i",
+    outputPath, // Input: output file from mkvmerge
+    "-map",
+    "0", // Map all streams from input
+    "-c",
+    "copy", // Copy all streams without re-encoding
+  ];
+
   response.infoLog += "☒ Successfully removed Dolby Vision\n";
 
   return response;
